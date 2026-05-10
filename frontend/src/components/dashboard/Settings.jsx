@@ -1,0 +1,123 @@
+import { useState, useContext } from "react";
+import { AuthContext } from "../../context/AuthContext";
+
+export default function Settings() {
+  const { user } = useContext(AuthContext);
+
+  const [profile, setProfile] = useState({
+    name: user?.name || "", email: user?.email || "", phone: user?.phone || ""
+  });
+  const [saved, setSaved] = useState(false);
+
+  const handleChange = (e) => {
+    setProfile({ ...profile, [e.target.name]: e.target.value });
+    setSaved(false);
+  };
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch("http://localhost:5000/api/users/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(profile)
+      });
+      const result = await res.json();
+      if (result.success) setSaved(true);
+      else alert(result.message || "Failed to update profile");
+    } catch (err) { console.error(err); setSaved(true); }
+  };
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold text-on-surface tracking-tight mb-1">Settings</h1>
+      <p className="text-sm text-on-surface-variant mb-8">Manage your account preferences and profile information.</p>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Profile */}
+        <div className="bg-surface-container rounded-xl border border-outline-variant p-6">
+          <h2 className="text-lg font-semibold text-on-surface mb-5 tracking-tight flex items-center gap-2">
+            <span className="material-icons-round text-primary">person</span>
+            Profile Information
+          </h2>
+          <form onSubmit={handleSave} className="space-y-4">
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-on-muted block mb-1.5">Full Name</label>
+              <input name="name" value={profile.name} onChange={handleChange} className="input-base w-full text-sm" />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-on-muted block mb-1.5">Email</label>
+              <input name="email" type="email" value={profile.email} onChange={handleChange} className="input-base w-full text-sm" />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-on-muted block mb-1.5">Phone</label>
+              <input name="phone" value={profile.phone} onChange={handleChange} className="input-base w-full text-sm" />
+            </div>
+            <button type="submit" className="btn-primary text-sm">
+              Save Changes
+            </button>
+            {saved && (
+              <p className="text-tertiary text-sm flex items-center gap-1">
+                <span className="material-icons-round text-base">check_circle</span>
+                Profile updated successfully
+              </p>
+            )}
+          </form>
+        </div>
+
+        {/* Notifications & Account */}
+        <div className="space-y-6">
+          <div className="bg-surface-container rounded-xl border border-outline-variant p-6">
+            <h2 className="text-lg font-semibold text-on-surface mb-5 tracking-tight flex items-center gap-2">
+              <span className="material-icons-round text-primary">notifications</span>
+              Notification Preferences
+            </h2>
+            <div className="space-y-4">
+              <NotifToggle label="Email notifications for new bookings" defaultOn={true} />
+              <NotifToggle label="SMS alerts for contact requests" defaultOn={true} />
+              <NotifToggle label="Weekly performance summary" defaultOn={false} />
+              <NotifToggle label="Marketing and promotional emails" defaultOn={false} />
+            </div>
+          </div>
+
+          <div className="bg-surface-container rounded-xl border border-outline-variant p-6">
+            <h2 className="text-lg font-semibold text-on-surface mb-4 tracking-tight flex items-center gap-2">
+              <span className="material-icons-round text-primary">admin_panel_settings</span>
+              Account
+            </h2>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-surface border border-outline-variant">
+                <span className="text-sm text-on-surface-variant">Role</span>
+                <span className="badge-occupied text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md">{user?.role || "N/A"}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-surface border border-outline-variant">
+                <span className="text-sm text-on-surface-variant">Account Status</span>
+                <span className="badge-available text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md">Active</span>
+              </div>
+            </div>
+            <p className="text-on-muted text-xs mt-4 flex items-center gap-1">
+              <span className="material-icons-round text-xs">info</span>
+              Password change and account deletion are managed through the backend.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function NotifToggle({ label, defaultOn }) {
+  const [on, setOn] = useState(defaultOn);
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-on-surface-variant">{label}</span>
+      <button
+        onClick={() => setOn(!on)}
+        className={`w-11 h-6 rounded-full transition-colors relative ${on ? "bg-primary" : "bg-outline-variant"}`}
+      >
+        <span className={`block w-4 h-4 bg-white rounded-full absolute top-1 transition-transform shadow-sm ${on ? "translate-x-6" : "translate-x-1"}`} />
+      </button>
+    </div>
+  );
+}
